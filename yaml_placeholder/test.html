@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Display XML Data</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      line-height: 1.6;
+      margin: 20px;
+    }
+    .sheet {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      grid-gap: 20px;
+    }
+    .block {
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      padding: 12px;
+      background: #fafafa;
+    }
+    .block h2 {
+      margin: 0 0 10px 0;
+      font-size: 18px;
+      background-color: #f4f4f4;
+      padding: 8px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+    }
+    .header {
+      grid-column: 1 / -1;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      grid-gap: 12px;
+      align-items: end;
+    }
+    .field {
+      display: grid;
+      grid-template-rows: auto auto;
+    }
+    .label {
+      font-size: 12px;
+      color: #555;
+      margin-bottom: 4px;
+    }
+    .value {
+      min-height: 24px;
+      border: 1px solid #ddd;
+      background: #fff;
+      padding: 6px 8px;
+      border-radius: 4px;
+    }
+    .grid-attrs {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      grid-gap: 10px 16px;
+    }
+    .attrs-pair {
+      display: grid;
+      grid-template-columns: 1fr 80px;
+      align-items: center;
+      grid-column-gap: 10px;
+    }
+    .attrs-pair .value { text-align: center; }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: #fff;
+    }
+    th, td {
+      border: 1px solid #ddd;
+      padding: 6px 8px;
+      font-size: 14px;
+    }
+    th { background: #f0f0f0; text-align: left; }
+    .skills {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      grid-gap: 14px 24px;
+    }
+    .skill-cat h3 { margin: 8px 0; font-size: 16px; }
+    .skill-cat ul { list-style: none; margin: 0; padding: 0; }
+    .skill-cat li { display: grid; grid-template-columns: 1fr 60px; grid-column-gap: 10px; align-items: center; margin: 4px 0; }
+    .skill-cat li .val { border: 1px solid #ddd; border-radius: 4px; padding: 4px 6px; text-align: center; background: #fff; }
+    .skill-base { display: grid; grid-template-columns: 1fr 60px; grid-column-gap: 10px; align-items: center; margin: 6px 0 10px; }
+    .skill-base .label { font-size: 13px; margin: 0; }
+    .skill-base .val { border: 1px solid #ddd; border-radius: 4px; padding: 4px 6px; text-align: center; background: #fff; }
+  </style>
+</head>
+<body>
+  <h1>Personaje XML Display</h1>
+  <div id="output" class="sheet"></div>
+
+  <script>
+    // Ruta al archivo XML
+    const xmlFile = './test.xml';
+
+    // Función para cargar el archivo XML
+    async function loadXML(file) {
+      try {
+        const response = await fetch(file);
+        if (!response.ok) {
+          throw new Error(`Error al cargar el archivo XML: ${response.statusText}`);
+        }
+        const xmlText = await response.text();
+        const parser = new DOMParser();
+        const xmlDoc = parser.parseFromString(xmlText, "application/xml");
+        displayData(xmlDoc); // Mostrar los datos en el HTML
+      } catch (error) {
+        console.error(error);
+        document.getElementById('output').innerHTML = `<p>Error al cargar el archivo XML.</p>`;
+      }
+    }
+
+    // Función para mostrar los datos en el HTML con estructura tipo ficha
+    function displayData(xmlDoc) {
+      const outputDiv = document.getElementById('output');
+      const pj = xmlDoc.getElementsByTagName('personaje')[0];
+
+      // Header
+      const header = document.createElement('div');
+      header.className = 'block header';
+      header.appendChild(makeField('Jugador', getText(pj, 'jugador')));
+      header.appendChild(makeField('Nombre', getText(pj, 'nombre')));
+      header.appendChild(makeField('Nivel Tecnológico', getText(pj, 'nivel_tecnologico')));
+      header.appendChild(makeField('Puntos Épicos', getText(pj, 'puntos_epicos')));
+      header.appendChild(makeField('Corporación', getText(pj, 'corporacion')));
+      outputDiv.appendChild(header);
+
+      // Atributos Mentales y Físicos
+      const atributos = pj.getElementsByTagName('atributos')[0];
+      if (atributos) {
+        const mentales = atributos.getElementsByTagName('mentales')[0];
+        const fisicos = atributos.getElementsByTagName('fisicos')[0];
+        // Valores numéricos para cálculos
+        const agilidadNum = safeInt(getText(fisicos, 'agilidad'));
+        const habilidadNum = safeInt(getText(fisicos, 'habilidad'));
+        const fuerzaNum = safeInt(getText(fisicos, 'fuerza'));
+        const constitucionNum = safeInt(getText(fisicos, 'constitucion'));
+        const percepcionNum = safeInt(getText(mentales, 'percepcion'));
+        const inteligenciaNum = safeInt(getText(mentales, 'inteligencia'));
+        const voluntadNum = safeInt(getText(mentales, 'voluntad'));
+        const inteligenciaBase = safeInt(getText(mentales, 'inteligencia'));
+        const voluntadBase = safeInt(getText(mentales, 'voluntad'));
+
+        const blockMent = document.createElement('div');
+        blockMent.className = 'block';
+        const h2m = document.createElement('h2'); h2m.textContent = 'Atributos Mentales'; blockMent.appendChild(h2m);
+        blockMent.appendChild(makeAttrsGrid(mentales));
+
+        const blockFis = document.createElement('div');
+        blockFis.className = 'block';
+        const h2f = document.createElement('h2'); h2f.textContent = 'Atributos Físicos'; blockFis.appendChild(h2f);
+        blockFis.appendChild(makeAttrsGrid(fisicos));
+
+        outputDiv.appendChild(blockMent);
+        outputDiv.appendChild(blockFis);
+      }
+
+      // Combate
+      const combate = pj.getElementsByTagName('combate')[0];
+      if (combate) {
+        const blockComb = document.createElement('div');
+        blockComb.className = 'block';
+        const h2c = document.createElement('h2'); h2c.textContent = 'Combate'; blockComb.appendChild(h2c);
+
+        // Tabla simple de valores base (iniciativa, alerta, esquivar)
+        const tbl = document.createElement('table');
+        const thead = document.createElement('thead');
+        const thr = document.createElement('tr');
+        ;['Iniciativa','Alerta','Esquivar'].forEach(t => { const th = document.createElement('th'); th.textContent = t; thr.appendChild(th); });
+        thead.appendChild(thr);
+        tbl.appendChild(thead);
+        const tbody = document.createElement('tbody');
+        const tr = document.createElement('tr');
+        // Recalcular atributos numéricos aquí para asegurar disponibilidad
+        const attrsRootForCombat = pj.getElementsByTagName('atributos')[0];
+        const mentForCombat = attrsRootForCombat?.getElementsByTagName('mentales')[0];
+        const fisForCombat = attrsRootForCombat?.getElementsByTagName('fisicos')[0];
+        const agiC = safeInt(getText(fisForCombat, 'agilidad'));
+        const habC = safeInt(getText(fisForCombat, 'habilidad'));
+
+        const fueC = safeInt(getText(fisForCombat, 'fuerza'));
+        const conC = safeInt(getText(fisForCombat, 'constitucion'));
+        const perC = safeInt(getText(mentForCombat, 'percepcion'));
+        const intC = safeInt(getText(mentForCombat, 'inteligencia'));
+
+        ;['iniciativa','alerta','esquivar'].forEach(tag => {
+          const td = document.createElement('td');
+          let base = 0;
+          let manual = safeInt(getText(combate, tag));
+          let title = '';
+          if (tag === 'iniciativa') {
+            base = Math.round((agiC + perC) / 2);
+            title = `media(Agilidad ${agiC}, Percepción ${perC}) + manual ${manual} = ${base + manual}`;
+          } else if (tag === 'alerta') {
+            base = Math.round((perC + intC) / 2);
+            title = `media(Percepción ${perC}, Inteligencia ${intC}) + manual ${manual} = ${base + manual}`;
+          } else if (tag === 'esquivar') {
+            base = Math.round((agiC + habC) / 2);
+            title = `media(Agilidad ${agiC}, Habilidad ${habC}) + manual ${manual} = ${base + manual}`;
+          }
+          const total = base + manual;
+          td.textContent = String(total);
+          td.title = title;
+          tr.appendChild(td);
+        });
+        tbody.appendChild(tr);
+        tbl.appendChild(tbody);
+        blockComb.appendChild(tbl);
+
+        // Base para Sin armas = media(Fuerza, Constitución, Agilidad)
+        const baseSinArmas = Math.round((fueC + conC + agiC) / 3);
+
+        // Subtablas por arma/alcance
+        blockComb.appendChild(
+          makeTriSizeTable(
+            'Sin armas',
+            combate.getElementsByTagName('sin_armas')[0],
+            { value: baseSinArmas, label: 'Base Sin armas (media Fue, Con, Agi)', breakdown: `(${fueC}+${conC}+${agiC})/3 = ${baseSinArmas}` }
+          )
+        );
+        const baseDist = Math.round((agiC + habC + perC) / 3);
+        blockComb.appendChild(
+          makeTriSizeTable(
+            'A distancia',
+            combate.getElementsByTagName('distancia')[0],
+            { value: baseDist, label: 'Base A distancia (media Agi, Hab, Per)', breakdown: `(${agiC}+${habC}+${perC})/3 = ${baseDist}` }
+          )
+        );
+
+        const baseCc = Math.round((fueC + agiC + habC) / 3);
+        blockComb.appendChild(
+          makeTriSizeTable(
+            'Arma C/C',
+            combate.getElementsByTagName('arma_cc')[0],
+            { value: baseCc, label: 'Base Arma C/C (media Fue, Agi, Hab)', breakdown: `(${fueC}+${agiC}+${habC})/3 = ${baseCc}` }
+          )
+        );
+
+        outputDiv.appendChild(blockComb);
+
+        // Habilidades agrupadas
+        const habilidades = combate.getElementsByTagName('habilidades')[0];
+        if (habilidades) {
+          const blockSkills = document.createElement('div');
+          blockSkills.className = 'block';
+          const h2s = document.createElement('h2'); h2s.textContent = 'Habilidades'; blockSkills.appendChild(h2s);
+
+          const skillsWrap = document.createElement('div');
+          skillsWrap.className = 'skills';
+          // Calcular base académicas (media de inteligencia y voluntad)
+          const atributosRoot = pj.getElementsByTagName('atributos')[0];
+          const mentalesForSkills = atributosRoot?.getElementsByTagName('mentales')[0];
+          const fisicosForSkills = atributosRoot?.getElementsByTagName('fisicos')[0];
+          const inteligenciaForSkills = safeInt(getText(mentalesForSkills, 'inteligencia'));
+          const voluntadForSkills = safeInt(getText(mentalesForSkills, 'voluntad'));
+          const percepcionForSkills = safeInt(getText(mentalesForSkills, 'percepcion'));
+          const carismaForSkills = safeInt(getText(mentalesForSkills, 'carisma'));
+          const habilidadForSkills = safeInt(getText(fisicosForSkills, 'habilidad'));
+          const agilidadForSkills = safeInt(getText(fisicosForSkills, 'agilidad'));
+          const fuerzaForSkills = safeInt(getText(fisicosForSkills, 'fuerza'));
+          const academicasBase = Math.round((inteligenciaForSkills + voluntadForSkills) / 2);
+          const tecnologiaBase = Math.round((habilidadForSkills + percepcionForSkills) / 2);
+          const atleticasBase = Math.round((agilidadForSkills + fuerzaForSkills) / 2);
+          const socialesBase = Math.round((carismaForSkills + percepcionForSkills) / 2);
+
+          Array.from(habilidades.children).forEach(cat => {
+            const catDiv = document.createElement('div');
+            catDiv.className = 'skill-cat';
+            const h3 = document.createElement('h3'); h3.textContent = toTitle(cat.nodeName); catDiv.appendChild(h3);
+            const ul = document.createElement('ul');
+            if (cat.nodeName === 'academicas') {
+              const baseRow = document.createElement('div');
+              baseRow.className = 'skill-base';
+              const baseLabel = document.createElement('div'); baseLabel.className = 'label'; baseLabel.textContent = 'Base (media Int y Vol)';
+              const baseVal = document.createElement('div'); baseVal.className = 'val'; baseVal.textContent = String(academicasBase);
+              baseVal.title = `(${inteligenciaForSkills}+${voluntadForSkills})/2 = ${academicasBase}`;
+              baseRow.appendChild(baseLabel); baseRow.appendChild(baseVal);
+              catDiv.appendChild(baseRow);
+            }
+            if (cat.nodeName === 'tecnologia') {
+              const baseRow = document.createElement('div');
+              baseRow.className = 'skill-base';
+              const baseLabel = document.createElement('div'); baseLabel.className = 'label'; baseLabel.textContent = 'Base (media Habilidad y Percepción)';
+              const baseVal = document.createElement('div'); baseVal.className = 'val'; baseVal.textContent = String(tecnologiaBase);
+              baseVal.title = `(${habilidadForSkills}+${percepcionForSkills})/2 = ${tecnologiaBase}`;
+              baseRow.appendChild(baseLabel); baseRow.appendChild(baseVal);
+              catDiv.appendChild(baseRow);
+            }
+            if (cat.nodeName === 'atleticas') {
+              const baseRow = document.createElement('div');
+              baseRow.className = 'skill-base';
+              const baseLabel = document.createElement('div'); baseLabel.className = 'label'; baseLabel.textContent = 'Base (media Agilidad y Fuerza)';
+              const baseVal = document.createElement('div'); baseVal.className = 'val'; baseVal.textContent = String(atleticasBase);
+              baseVal.title = `(${agilidadForSkills}+${fuerzaForSkills})/2 = ${atleticasBase}`;
+              baseRow.appendChild(baseLabel); baseRow.appendChild(baseVal);
+              catDiv.appendChild(baseRow);
+            }
+            if (cat.nodeName === 'sociales') {
+              const baseRow = document.createElement('div');
+              baseRow.className = 'skill-base';
+              const baseLabel = document.createElement('div'); baseLabel.className = 'label'; baseLabel.textContent = 'Base (media Carisma y Percepción)';
+              const baseVal = document.createElement('div'); baseVal.className = 'val'; baseVal.textContent = String(socialesBase);
+              baseVal.title = `(${carismaForSkills}+${percepcionForSkills})/2 = ${socialesBase}`;
+              baseRow.appendChild(baseLabel); baseRow.appendChild(baseVal);
+              catDiv.appendChild(baseRow);
+            }
+            Array.from(cat.children).forEach(s => {
+              const li = document.createElement('li');
+              const name = document.createElement('span'); name.textContent = prettyName(s.nodeName);
+              const val = document.createElement('span'); val.className = 'val';
+              const indiv = safeInt((s.textContent || '').trim());
+              if (cat.nodeName === 'academicas') {
+                const total = academicasBase + indiv;
+                val.innerHTML = `${total}${indiv ? ` <small style="font-size:0.8em;">(${indiv})</small>` : ''}`;
+                val.title = `base ${academicasBase} + individual ${indiv} = ${total}`;
+              } else if (cat.nodeName === 'tecnologia') {
+                const total = tecnologiaBase + indiv;
+                val.innerHTML = `${total}${indiv ? ` <small style="font-size:0.8em;">(${indiv})</small>` : ''}`;
+                val.title = `base ${tecnologiaBase} + individual ${indiv} = ${total}`;
+              } else if (cat.nodeName === 'atleticas') {
+                const total = atleticasBase + indiv;
+                val.innerHTML = `${total}${indiv ? ` <small style=\"font-size:0.8em;\">(${indiv})</small>` : ''}`;
+                val.title = `base ${atleticasBase} + individual ${indiv} = ${total}`;
+              } else if (cat.nodeName === 'sociales') {
+                const total = socialesBase + indiv;
+                val.innerHTML = `${total}${indiv ? ` <small style=\"font-size:0.8em;\">(${indiv})</small>` : ''}`;
+                val.title = `base ${socialesBase} + individual ${indiv} = ${total}`;
+              } else {
+                val.textContent = String(indiv);
+              }
+              li.appendChild(name); li.appendChild(val);
+              ul.appendChild(li);
+            });
+            catDiv.appendChild(ul);
+            skillsWrap.appendChild(catDiv);
+          });
+          blockSkills.appendChild(skillsWrap);
+          outputDiv.appendChild(blockSkills);
+        }
+      }
+    }
+
+    // Helpers de UI
+    function makeField(label, value) {
+      const wrap = document.createElement('div');
+      wrap.className = 'field';
+      const l = document.createElement('div'); l.className = 'label'; l.textContent = label;
+      const v = document.createElement('div'); v.className = 'value'; v.textContent = value;
+      wrap.appendChild(l); wrap.appendChild(v);
+      return wrap;
+    }
+
+    function makeAttrsGrid(node) {
+      const grid = document.createElement('div');
+      grid.className = 'grid-attrs';
+      if (!node) return grid;
+      Array.from(node.children).forEach(child => {
+        const row = document.createElement('div');
+        row.className = 'attrs-pair';
+        const name = document.createElement('div'); name.textContent = prettyName(child.nodeName);
+        const val = document.createElement('div'); val.className = 'value'; val.textContent = (child.textContent || '').trim();
+        row.appendChild(name); row.appendChild(val);
+        grid.appendChild(row);
+      });
+      return grid;
+    }
+
+    function makeTriSizeTable(title, node, baseInfo) {
+      const container = document.createElement('div');
+      const h3 = document.createElement('h3'); h3.textContent = title; container.appendChild(h3);
+      if (baseInfo && typeof baseInfo.value === 'number') {
+        const baseRow = document.createElement('div');
+        baseRow.className = 'skill-base';
+        const baseLabel = document.createElement('div'); baseLabel.className = 'label'; baseLabel.textContent = baseInfo.label || 'Base';
+        const baseVal = document.createElement('div'); baseVal.className = 'val'; baseVal.textContent = String(baseInfo.value);
+        if (baseInfo.breakdown) baseVal.title = baseInfo.breakdown;
+        baseRow.appendChild(baseLabel); baseRow.appendChild(baseVal);
+        container.appendChild(baseRow);
+      }
+      const tbl = document.createElement('table');
+      const thead = document.createElement('thead');
+      const trh = document.createElement('tr');
+      ;['Pequeña','Mediana','Grande'].forEach(t => { const th = document.createElement('th'); th.textContent = t; trh.appendChild(th); });
+      thead.appendChild(trh); tbl.appendChild(thead);
+      const tbody = document.createElement('tbody');
+      const tr = document.createElement('tr');
+      ['pequeña','mediana','grande'].forEach(tag => {
+        const td = document.createElement('td');
+        const indivText = node ? (node.getElementsByTagName(tag)[0]?.textContent || '').trim() : '';
+        const indiv = safeInt(indivText);
+        if (baseInfo && typeof baseInfo.value === 'number') {
+          const total = baseInfo.value + indiv;
+          td.innerHTML = `${total}${indiv ? ` <small style="font-size:0.8em;">(${indiv})</small>` : ''}`;
+          td.title = `${baseInfo.label || 'Base'}: ${baseInfo.value} + individual ${indiv} = ${total}`;
+        } else {
+          td.textContent = indivText;
+        }
+        tr.appendChild(td);
+      });
+      tbody.appendChild(tr); tbl.appendChild(tbody);
+      container.appendChild(tbl);
+      return container;
+    }
+
+    // Utils de datos
+    function getText(parent, tag) {
+      return (parent?.getElementsByTagName(tag)[0]?.textContent || '').trim();
+    }
+    function toTitle(str) {
+      return str.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+    }
+    function prettyName(str) {
+      return toTitle(str).replace(/Cc/gi, 'C/C');
+    }
+
+    // Parsing seguro a entero
+    function safeInt(v) {
+      const n = parseInt(String(v), 10);
+      return Number.isFinite(n) ? n : 0;
+    }
+
+    // Cargar el archivo XML cuando el DOM esté listo
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', () => loadXML(xmlFile));
+    } else {
+    loadXML(xmlFile);
+    }
+  </script>
+</body>
+</html>

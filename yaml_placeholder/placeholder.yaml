@@ -1,0 +1,95 @@
+personaje:
+  jugador: ""
+  nombre: ""
+  nivel_tecnologico: 6
+  puntos_epicos: 9
+  corporacion: ""
+  atributos:
+    mentales:
+      carisma: []
+      percepcion: []
+      inteligencia: []
+      voluntad: []
+    fisicos:
+      agilidad: []
+      constitucion: []
+      fuerza: []
+      habilidad: []
+  combate:
+    iniciativa: []
+    alerta: []
+    esquivar: []
+    sin_armas:
+      pequeña: []
+      mediana: []
+      grande: []
+    distancia:
+      pequeña: []
+      mediana: []
+      grande: []
+    arma_cc:
+      pequeña: []
+      mediana: []
+      grande: []
+    habilidades:
+      academicas:
+        ciencias: []
+        biotecnologia: []
+        navegacion: []
+        burocracia: []
+        buscar_informacion: []
+        programacion: []
+        diagnostico: []
+        esconderse_evadirse: []
+        investigacion: []
+        juego: []
+        diseño_hardware: []
+        sentido_del_negocio: []
+        supervivencia: []
+        vigilar_rastrear: []
+      tecnologia:
+        armeria: []
+        artesania: []
+        ciber_tecnologia: []
+        demoliciones: []
+        disfraz: []
+        electronica: []
+        falsificacion: []
+        quimica: []
+        manualidades: []
+        mecanica: []
+        manos_agiles: []
+        seguridad: []
+        primeros_aux: []
+      atleticas:
+        acrobacias: []
+        conducir: []
+        resistir: []
+        proezas: []
+        pilotar: []
+        trajes_servoasistidos: []
+        sigilo: []
+      sociales:
+        absorcion: []
+        autocontrol: []
+        bajos_fondos: []
+        empatia: []
+        interrogatorio: []
+        liderazgo: []
+        manejo_de_animales: []
+        persuasion: []
+        seduccion: []
+        estilo: []
+      maestros_de_la_distorsion:
+        det_ident_distorsion_p: []
+        manipular_distorsion_v: []
+        camino_de_los_portales_x: []
+      hechiceria:
+        proyeccion_de_energia_h: []
+        proteccion_de_energia_p: []
+        invocacion_de_energia_i: []
+      marcas_arcanas:
+        tatuador_runico_ca: []
+        herrero_runico_v: []
+      focos:
+        distorsion: []
